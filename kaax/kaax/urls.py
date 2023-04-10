@@ -15,9 +15,12 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from .controllers.transacciones import revisar
+from kaax_app.views import entrenamiento_csv, entrenamiento_json
+# from .controllers.transacciones import revisar
 
 urlpatterns = [
     # path("admin/", admin.site.urls),
     path("transaction/", admin.site.urls),
+    path('entrenamiento/csv/', entrenamiento_csv, name='entrenamiento_csv'),
+    path('entrenamiento/json/', entrenamiento_json, name='entrenamiento_json'),
 ]

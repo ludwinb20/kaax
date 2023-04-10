@@ -7,7 +7,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.metrics import accuracy_score
 
 
-data = pd.read_csv('../datos/registration_data_20k_full.csv')
+data = pd.read_csv('kaax/datos/registration_data_20K_full.csv')
 
 X = data.drop('EVENT_LABEL', axis=1)
 y = data['EVENT_LABEL']
@@ -24,8 +24,7 @@ preprocessor = ColumnTransformer(
 clf = DecisionTreeClassifier()
 
 
-pipe = Pipeline(steps=[('preprocessor', preprocessor),
-                       ('classifier', clf)])
+pipe = Pipeline(steps=[('preprocessor', preprocessor),('classifier', clf)])
 
 pipe.fit(X_train, y_train)
 
@@ -35,7 +34,4 @@ accuracy = accuracy_score(y_test, y_pred)
 
 print('Accuracy: %.2f' % accuracy)
 
-# from sklearn.metrics import confusion_matrix
-# y_pred = clf.predict(X_test)
-# cm = confusion_matrix(y_test, y_pred)
-# print(cm)
+
