@@ -40,4 +40,12 @@ class Transacciones_Prueba(models.Model):
     class Meta:
         db_table = 'transacciones_prueba'
 
+
+class Entrenamientos(models.Model):
+    precision = models.CharField(max_length=255)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'entrenamientos'
     
