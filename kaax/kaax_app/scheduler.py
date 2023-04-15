@@ -1,23 +1,24 @@
-# scheduler.py
-from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime
 import pytz
-from . import soporte
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.interval import IntervalTrigger
+from kaax_app import soporte
 
-def start():
-    scheduler = BackgroundScheduler()
-    scheduler.add_job(
-        func=soporte.renovartoken, # reemplaza "tu_funcion_a_ejecutar" por el nombre de tu función
-        trigger='interval',
-        minutes=1,
-        next_run_time=datetime.now(tz=pytz.timezone('America/Tegucigalpa')) # cambia la zona horaria si es necesario
-    )
+scheduler = BackgroundScheduler()
 
-    scheduler.add_job(
-        func=soporte.entrenar, # reemplaza "tu_funcion_a_ejecutar" por el nombre de tu función
-        trigger='interval',
-        minutes=1,
-        next_run_time=datetime.now(tz=pytz.timezone('America/Tegucigalpa')) # cambia la zona horaria si es necesario
-    )
+# Programa la tarea que se ejecutará cada minuto
+scheduler.add_job(
+    func=soporte.renovartoken,
+    trigger=IntervalTrigger(minutes=1),
+    next_run_time=datetime.now(tz=pytz.timezone('America/Tegucigalpa'))
+)
 
-    scheduler.start()
+# Programa la tarea que se ejecutará cada 10 minutos
+scheduler.add_job(
+    func=soporte.entrenar,
+    trigger=IntervalTrigger(minutes=1),
+    next_run_time=datetime.now(tz=pytz.timezone('America/Tegucigalpa'))
+)
+
+scheduler.start()
+

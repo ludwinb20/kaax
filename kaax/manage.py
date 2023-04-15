@@ -2,6 +2,11 @@
 """Django's command-line utility for administrative tasks."""
 import os
 import sys
+from django.core.wsgi import get_wsgi_application
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'kaax.settings')
+application = get_wsgi_application()
+from kaax_app.scheduler import start
 
 
 def main():
@@ -19,4 +24,5 @@ def main():
 
 
 if __name__ == "__main__":
+    start()
     main()

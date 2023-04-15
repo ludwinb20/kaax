@@ -10,7 +10,8 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import accuracy_score
 import joblib
-from kaax_app.models import Transacciones_Prueba, Empresa
+from kaax_app.models import Transacciones_Prueba, Empresa, Entrenamientos
+from joblib import dump
 
 def renovartoken():
     empresas = Empresa.objects.all()
@@ -54,9 +55,9 @@ def entrenar():
     accuracy = accuracy_score(y_test, y_pred)
 
     print('Accuracy: %.2f' % accuracy)
-    entrenamiento = Entrenamientos(precision=precision)
+    entrenamiento = Entrenamientos(precision=accuracy)
     entrenamiento.save()
 
     # guardar el modelo entrenado usando joblib
-    dump(pipe, 'decision_tree.joblib')
+    dump(pipe, 'kaax/pesos/decision_tree.joblib')
 
