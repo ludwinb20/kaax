@@ -21,7 +21,7 @@ def renovartoken():
         empresa.save()
 
         data = {'token': token}
-        response = requests.post('http://ejemplo.com/tokens', json=data)
+        response = requests.post(empresa.endpoint_token, json=data)
         
             # Verificar que la petición se haya realizado con éxito
         if response.status_code == 200:
