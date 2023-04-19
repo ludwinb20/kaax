@@ -4,8 +4,21 @@ from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 import uuid
 import os
-from .models import Transacciones_Prueba
+from .serializers import VerificacionesSerializer
+from .models import Transacciones_Prueba, Empresa, Verificaciones
 import json
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
+from sklearn.pipeline import Pipeline
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
+import pandas as pd
+from joblib import dump, load
+
 
 @csrf_exempt
 def entrenamiento_csv(request):
@@ -98,3 +111,57 @@ def entrenamiento_json(request):
     data = {'resultado': 'exitoso'}
     return JsonResponse(data, status=200)
 
+
+@csrf_exempt
+@api_view(['POST'])
+def verificar_transaccion(request):
+    # validar campos necesarios
+    required_fields = ['ip_address', 'email_address', 'billing_state', 'user_agent', 'billing_postal', 'phone_number', 'EVENT_TIMESTAMP', 'billing_address', 'empresa_id', 'token']
+    for field in required_fields:
+        if field not in request.data:
+            return JsonResponse({'error': f'El campo {field} es obligatorio.'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    # verificar token de la empresa
+    empresa_id = request.data['empresa_id']
+    token = request.data['token']
+    try:
+        empresa = Empresa.objects.get(id=empresa_id, token=token)
+    except Empresa.DoesNotExist:
+        return JsonResponse({'error': 'Token de empresa inválido.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    # cargar modelo entrenado
+    clf = load('kaax/pesos/decision_tree.joblib')
+
+    # crear pipeline para preprocesar datos
+    categorical_features = ['ip_address', 'email_address', 'billing_postal', 'phone_number', 'billing_address']
+    preprocessor = ColumnTransformer(transformers=[('cat', OneHotEncoder(handle_unknown='ignore'), categorical_features)])
+    pipe = Pipeline(steps=[('preprocessor', preprocessor), ('classifier', clf)])
+
+    # preprocesar datos de entrada
+    input_data = pd.DataFrame(request.data, index=[0])
+    input_data.drop(['empresa_id', 'token'], axis=1, inplace=True)
+    try:
+        input_data['EVENT_TIMESTAMP'] = pd.to_datetime(input_data['EVENT_TIMESTAMP'], format='%Y-%m-%d %H:%M:%S')
+    except ValueError:
+        return JsonResponse({'error': 'El formato de EVENT_TIMESTAMP es inválido. Debe ser YYYY-MM-DD HH:MM:SS.'}, status=status.HTTP_400_BAD_REQUEST)
+    input_data_processed = preprocessor.fit_transform(input_data)
+
+    # hacer predicción y guardar resultado
+    result = pipe.predict(input_data_processed)[0]
+    verificacion = Verificaciones(
+        ip_address=request.data['ip_address'],
+        email_address=request.data['email_address'],
+        billing_state=request.data['billing_state'],
+        user_agent=request.data['user_agent'],
+        billing_postal=request.data['billing_postal'],
+        phone_number=request.data['phone_number'],
+        EVENT_TIMESTAMP=request.data['EVENT_TIMESTAMP'],
+        billing_address=request.data['billing_address'],
+        resultado=result,
+        empresa_id=empresa
+    )
+    verificacion.save()
+
+    # retornar resultado
+    response_data = {'resultado': result}
+    return Response(response_data)

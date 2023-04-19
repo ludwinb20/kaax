@@ -48,4 +48,23 @@ class Entrenamientos(models.Model):
 
     class Meta:
         db_table = 'entrenamientos'
+        
+
+class Verificaciones(models.Model):
+    ip_address = models.CharField(max_length=255)
+    email_address = models.EmailField()
+    billing_state = models.CharField(max_length=255)
+    user_agent = models.CharField(max_length=255)
+    billing_postal = models.CharField(max_length=255)
+    phone_number = models.CharField(max_length=20)
+    EVENT_TIMESTAMP =  models.CharField(max_length=255)
+    billing_address = models.CharField(max_length=255)
+    resultado = models.CharField(max_length=255)
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'verificaciones'
+    
     

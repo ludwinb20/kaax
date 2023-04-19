@@ -9,14 +9,14 @@ scheduler = BackgroundScheduler()
 # Programa la tarea que se ejecutará cada minuto
 scheduler.add_job(
     func=soporte.renovartoken,
-    trigger=IntervalTrigger(minutes=1),
+    trigger=IntervalTrigger(hours=3),
     next_run_time=datetime.now(tz=pytz.timezone('America/Tegucigalpa'))
 )
 
 # Programa la tarea que se ejecutará cada 10 minutos
 scheduler.add_job(
     func=soporte.entrenar,
-    trigger=IntervalTrigger(minutes=1),
+    trigger=IntervalTrigger(days=1),
     next_run_time=datetime.now(tz=pytz.timezone('America/Tegucigalpa'))
 )
 

@@ -39,7 +39,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "kaax_app",
     "django_apscheduler",
-
+    "rest_framework",
 ]
 
 MIDDLEWARE = [
