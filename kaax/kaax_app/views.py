@@ -133,18 +133,19 @@ def verificar_transaccion(request):
     clf = load('kaax/pesos/decision_tree.joblib')
 
     # crear pipeline para preprocesar datos
-    categorical_features = ['ip_address', 'email_address', 'billing_postal', 'phone_number', 'billing_address']
+    categorical_features = ['ip_address', 'email_address', 'billing_state', 'user_agent' , 'billing_postal', 'phone_number', 'EVENT_TIMESTAMP',  'billing_address']
     preprocessor = ColumnTransformer(transformers=[('cat', OneHotEncoder(handle_unknown='ignore'), categorical_features)])
     pipe = Pipeline(steps=[('preprocessor', preprocessor), ('classifier', clf)])
 
     # preprocesar datos de entrada
-    input_data = pd.DataFrame(request.data, index=[0])
-    input_data.drop(['empresa_id', 'token'], axis=1, inplace=True)
+    input_data = pd.DataFrame(request.data, index=[0]).loc[:, ['ip_address', 'email_address', 'billing_state', 'user_agent', 'billing_postal', 'phone_number', 'EVENT_TIMESTAMP', 'billing_address']].T
+    print('Vamos bien')
     try:
         input_data['EVENT_TIMESTAMP'] = pd.to_datetime(input_data['EVENT_TIMESTAMP'], format='%Y-%m-%d %H:%M:%S')
     except ValueError:
         return JsonResponse({'error': 'El formato de EVENT_TIMESTAMP es inválido. Debe ser YYYY-MM-DD HH:MM:SS.'}, status=status.HTTP_400_BAD_REQUEST)
-    input_data_processed = preprocessor.fit_transform(input_data)
+
+    input_data_processed = preprocessor.fit_transform(input_data).squeeze()
 
     # hacer predicción y guardar resultado
     result = pipe.predict(input_data_processed)[0]
