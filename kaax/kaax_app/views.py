@@ -18,6 +18,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 import pandas as pd
 from joblib import dump, load
+import datetime
 
 
 @csrf_exempt
@@ -112,6 +113,8 @@ def entrenamiento_json(request):
     return JsonResponse(data, status=200)
 
 
+import datetime
+
 @csrf_exempt
 @api_view(['POST'])
 def verificar_transaccion(request):
@@ -137,15 +140,24 @@ def verificar_transaccion(request):
     preprocessor = ColumnTransformer(transformers=[('cat', OneHotEncoder(handle_unknown='ignore'), categorical_features)])
     pipe = Pipeline(steps=[('preprocessor', preprocessor), ('classifier', clf)])
 
-    # preprocesar datos de entrada
-    input_data = pd.DataFrame(request.data, index=[0]).loc[:, ['ip_address', 'email_address', 'billing_state', 'user_agent', 'billing_postal', 'phone_number', 'EVENT_TIMESTAMP', 'billing_address']].T
-    print('Vamos bien')
+# preprocesar datos de entrada
+    required_fields = ['ip_address', 'email_address', 'billing_state', 'user_agent', 'billing_postal', 'phone_number', 'EVENT_TIMESTAMP', 'billing_address']
+    for field in required_fields:
+        if field not in request.data:
+            return JsonResponse({'error': f'El campo {field} es obligatorio.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    event_timestamp_str = request.data['EVENT_TIMESTAMP']
     try:
-        input_data['EVENT_TIMESTAMP'] = pd.to_datetime(input_data['EVENT_TIMESTAMP'], format='%Y-%m-%d %H:%M:%S')
+        event_timestamp = pd.to_datetime(event_timestamp_str, format='%Y-%m-%d %H:%M:%S')
     except ValueError:
         return JsonResponse({'error': 'El formato de EVENT_TIMESTAMP es inválido. Debe ser YYYY-MM-DD HH:MM:SS.'}, status=status.HTTP_400_BAD_REQUEST)
 
+    input_data = pd.DataFrame(request.data, index=[0]).loc[:, ['ip_address', 'email_address', 'billing_state', 'user_agent' , 'billing_postal', 'phone_number', 'EVENT_TIMESTAMP',  'billing_address']].T
+    input_data.columns = input_data.columns.astype(str) # convertir nombres de columnas a str
+    print('---------Aqui--------')
+    print(input_data.columns)
     input_data_processed = preprocessor.fit_transform(input_data).squeeze()
+
 
     # hacer predicción y guardar resultado
     result = pipe.predict(input_data_processed)[0]
