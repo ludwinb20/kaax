@@ -136,31 +136,22 @@ def verificar_transaccion(request):
     clf = load('kaax/pesos/decision_tree.joblib')
 
     # crear pipeline para preprocesar datos
-    categorical_features = ['ip_address', 'email_address', 'billing_state', 'user_agent' , 'billing_postal', 'phone_number', 'EVENT_TIMESTAMP',  'billing_address']
+    categorical_features = ['ip_address', 'email_address', 'billing_state', 'user_agent', 'billing_postal', 'phone_number', 'EVENT_TIMESTAMP', 'billing_address']
     preprocessor = ColumnTransformer(transformers=[('cat', OneHotEncoder(handle_unknown='ignore'), categorical_features)])
     pipe = Pipeline(steps=[('preprocessor', preprocessor), ('classifier', clf)])
 
-# preprocesar datos de entrada
-    required_fields = ['ip_address', 'email_address', 'billing_state', 'user_agent', 'billing_postal', 'phone_number', 'EVENT_TIMESTAMP', 'billing_address']
-    for field in required_fields:
-        if field not in request.data:
-            return JsonResponse({'error': f'El campo {field} es obligatorio.'}, status=status.HTTP_400_BAD_REQUEST)
-
-    event_timestamp_str = request.data['EVENT_TIMESTAMP']
-    try:
-        event_timestamp = pd.to_datetime(event_timestamp_str, format='%Y-%m-%d %H:%M:%S')
-    except ValueError:
-        return JsonResponse({'error': 'El formato de EVENT_TIMESTAMP es inválido. Debe ser YYYY-MM-DD HH:MM:SS.'}, status=status.HTTP_400_BAD_REQUEST)
-
-    input_data = pd.DataFrame(request.data, index=[0]).loc[:, ['ip_address', 'email_address', 'billing_state', 'user_agent' , 'billing_postal', 'phone_number', 'EVENT_TIMESTAMP',  'billing_address']].T
+    input_data = pd.DataFrame(request.data, index=[0]).loc[:, ['ip_address', 'email_address', 'billing_state', 'user_agent' , 'billing_postal', 'phone_number', 'EVENT_TIMESTAMP',  'billing_address']]
     input_data.columns = input_data.columns.astype(str) # convertir nombres de columnas a str
-    print('---------Aqui--------')
-    print(input_data.columns)
     input_data_processed = preprocessor.fit_transform(input_data).squeeze()
-
-
     # hacer predicción y guardar resultado
+    print('------Estamos aqui, ya agregadas-------')
+    print(input_data_processed)
+    print('------Estamos aqui2-------')
     result = pipe.predict(input_data_processed)[0]
+
+
+
+
     verificacion = Verificaciones(
         ip_address=request.data['ip_address'],
         email_address=request.data['email_address'],

@@ -39,7 +39,7 @@ def entrenar():
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-    categorical_features = ['ip_address', 'email_address', 'billing_postal', 'phone_number', 'billing_address']
+    categorical_features = ['ip_address', 'email_address', 'billing_state', 'user_agent', 'billing_postal', 'phone_number', 'EVENT_TIMESTAMP', 'billing_address']
 
     preprocessor = ColumnTransformer(
         transformers=[
