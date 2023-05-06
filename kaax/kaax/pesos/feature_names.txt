@@ -1,0 +1,8 @@
+ip_address
+email_address
+billing_state
+user_agent
+billing_postal
+phone_number
+EVENT_TIMESTAMP
+billing_address

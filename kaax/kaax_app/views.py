@@ -113,8 +113,6 @@ def entrenamiento_json(request):
     return JsonResponse(data, status=200)
 
 
-import datetime
-
 @csrf_exempt
 @api_view(['POST'])
 def verificar_transaccion(request):
@@ -125,30 +123,25 @@ def verificar_transaccion(request):
             return JsonResponse({'error': f'El campo {field} es obligatorio.'}, status=status.HTTP_400_BAD_REQUEST)
     
     # verificar token de la empresa
-    empresa_id = request.data['empresa_id']
-    token = request.data['token']
-    try:
-        empresa = Empresa.objects.get(id=empresa_id, token=token)
-    except Empresa.DoesNotExist:
-        return JsonResponse({'error': 'Token de empresa inválido.'}, status=status.HTTP_401_UNAUTHORIZED)
+    # # empresa_id = request.data['empresa_id']
+    # # token = request.data['token']
+    # # try:
+    # #     empresa = Empresa.objects.get(id=empresa_id, token=token)
+    # # except Empresa.DoesNotExist:
+    # #     return JsonResponse({'error': 'Token de empresa inválido.'}, status=status.HTTP_401_UNAUTHORIZED)
 
-    # cargar modelo entrenado
+    # cargar modelo y preprocesador
     clf = load('kaax/pesos/decision_tree.joblib')
+    preprocessor = clf.named_steps['preprocessor']
 
-    # crear pipeline para preprocesar datos
-    categorical_features = ['ip_address', 'email_address', 'billing_state', 'user_agent', 'billing_postal', 'phone_number', 'EVENT_TIMESTAMP', 'billing_address']
-    preprocessor = ColumnTransformer(transformers=[('cat', OneHotEncoder(handle_unknown='ignore'), categorical_features)])
-    pipe = Pipeline(steps=[('preprocessor', preprocessor), ('classifier', clf)])
+    # leer datos de entrada
+    with open('kaax/pesos/feature_names.txt', 'r') as f:
+        feature_names = f.read().splitlines()
+    
+    input_data = pd.DataFrame(request.data, index=[0]).loc[:, feature_names]
+    input_data_processed = preprocessor.transform(input_data)
 
-    input_data = pd.DataFrame(request.data, index=[0]).loc[:, ['ip_address', 'email_address', 'billing_state', 'user_agent' , 'billing_postal', 'phone_number', 'EVENT_TIMESTAMP',  'billing_address']]
-    input_data.columns = input_data.columns.astype(str) # convertir nombres de columnas a str
-    input_data_processed = preprocessor.fit_transform(input_data).squeeze()
-    # hacer predicción y guardar resultado
-    print('------Estamos aqui, ya agregadas-------')
-    print(input_data_processed)
-    print('------Estamos aqui2-------')
-    result = pipe.predict(input_data_processed)[0]
-
+    result = clf.predict(input_data_processed)
 
 
 
@@ -162,7 +155,7 @@ def verificar_transaccion(request):
         EVENT_TIMESTAMP=request.data['EVENT_TIMESTAMP'],
         billing_address=request.data['billing_address'],
         resultado=result,
-        empresa_id=empresa
+        empresa_id=request.data['empresa_id']
     )
     verificacion.save()
 

@@ -59,5 +59,9 @@ def entrenar():
     entrenamiento.save()
 
     # guardar el modelo entrenado usando joblib
+    feature_names = list(X.columns)
     dump(pipe, 'kaax/pesos/decision_tree.joblib')
+    
+    with open('kaax/pesos/feature_names.txt', 'w') as f:
+        f.write('\n'.join(feature_names))
 
