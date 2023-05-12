@@ -131,17 +131,11 @@ def verificar_transaccion(request):
     # #     return JsonResponse({'error': 'Token de empresa inválido.'}, status=status.HTTP_401_UNAUTHORIZED)
 
     # cargar modelo y preprocesador
-    clf = load('kaax/pesos/decision_tree.joblib')
-    preprocessor = clf.named_steps['preprocessor']
-
-    # leer datos de entrada
-    with open('kaax/pesos/feature_names.txt', 'r') as f:
-        feature_names = f.read().splitlines()
+    pipe = load('kaax/pesos/decision_tree.joblib')
     
-    input_data = pd.DataFrame(request.data, index=[0]).loc[:, feature_names]
-    input_data_processed = preprocessor.transform(input_data)
+    df = pd.DataFrame(request.data, index=[0])
 
-    result = clf.predict(input_data_processed)
+    result = pipe.predict(df)
 
 
 
