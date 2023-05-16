@@ -117,11 +117,19 @@ def entrenamiento_json(request):
 @api_view(['POST'])
 def verificar_transaccion(request):
     # validar campos necesarios
-    required_fields = ['ip_address', 'email_address', 'billing_state', 'user_agent', 'billing_postal', 'phone_number', 'EVENT_TIMESTAMP', 'billing_address', 'empresa_id', 'token']
-    for field in required_fields:
+    required_fields_transaccion = ['ip_address', 'email_address', 'billing_state', 'user_agent', 'billing_postal', 'phone_number', 'EVENT_TIMESTAMP', 'billing_address']
+    required_fields_empresa = ['empresa_id', 'token']
+    
+    for field in required_fields_empresa:
         if field not in request.data:
             return JsonResponse({'error': f'El campo {field} es obligatorio.'}, status=status.HTTP_400_BAD_REQUEST)
-    
+        
+        
+    for field in required_fields_transaccion:
+        if field not in request.data['transaccion']:
+            return JsonResponse({'error': f'El campo {field} es obligatorio.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        
     # verificar token de la empresa
     # # empresa_id = request.data['empresa_id']
     # # token = request.data['token']
@@ -129,25 +137,25 @@ def verificar_transaccion(request):
     # #     empresa = Empresa.objects.get(id=empresa_id, token=token)
     # # except Empresa.DoesNotExist:
     # #     return JsonResponse({'error': 'Token de empresa inválido.'}, status=status.HTTP_401_UNAUTHORIZED)
-
+    transaccion = request.data['transaccion']
     # cargar modelo y preprocesador
     pipe = load('kaax/pesos/decision_tree.joblib')
     
-    df = pd.DataFrame(request.data, index=[0])
+    df = pd.DataFrame(transaccion, index=[0])
 
     result = pipe.predict(df)
 
 
 
     verificacion = Verificaciones(
-        ip_address=request.data['ip_address'],
-        email_address=request.data['email_address'],
-        billing_state=request.data['billing_state'],
-        user_agent=request.data['user_agent'],
-        billing_postal=request.data['billing_postal'],
-        phone_number=request.data['phone_number'],
-        EVENT_TIMESTAMP=request.data['EVENT_TIMESTAMP'],
-        billing_address=request.data['billing_address'],
+        ip_address=transaccion['ip_address'],
+        email_address=transaccion['email_address'],
+        billing_state=transaccion['billing_state'],
+        user_agent=transaccion['user_agent'],
+        billing_postal=transaccion['billing_postal'],
+        phone_number=transaccion['phone_number'],
+        EVENT_TIMESTAMP=transaccion['EVENT_TIMESTAMP'],
+        billing_address=transaccion['billing_address'],
         resultado=result,
         empresa_id=request.data['empresa_id']
     )
@@ -156,3 +164,58 @@ def verificar_transaccion(request):
     # retornar resultado
     response_data = {'resultado': result}
     return Response(response_data)
+
+
+@csrf_exempt
+@api_view(['POST'])
+def verificar_multiple(request):
+    required_fields_transaccion = ['ip_address', 'email_address', 'billing_state', 'user_agent', 'billing_postal', 'phone_number', 'EVENT_TIMESTAMP', 'billing_address']
+    required_fields_empresa = ['empresa_id', 'token']
+    
+    for field in required_fields_empresa:
+        if field not in request.data:
+            return JsonResponse({'error': f'El campo {field} es obligatorio.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # verificar token de la empresa
+    # empresa_id = request.data['empresa_id']
+    # token = request.data['token']
+    # try:
+    #     empresa = Empresa.objects.get(id=empresa_id, token=token)
+    # except Empresa.DoesNotExist:
+    #     return JsonResponse({'error': 'Token de empresa inválido.'}, status=status.HTTP_401_UNAUTHORIZED)
+        
+    transacciones = request.data['transacciones']
+    print(transacciones)
+    pipe = load('kaax/pesos/decision_tree.joblib')
+    i = 1
+    respuesta = []
+    
+    for transaccion in transacciones:
+        for field in required_fields_transaccion:
+            if field not in transaccion:
+                return JsonResponse({'error': f'Falta el campo {field} en la transaccion #{i}'}, status=status.HTTP_400_BAD_REQUEST)
+        df = pd.DataFrame(transaccion, index=[0])
+            
+        result = pipe.predict(df)
+
+        verificacion = Verificaciones(
+            ip_address=transaccion['ip_address'],
+            email_address=transaccion['email_address'],
+            billing_state=transaccion['billing_state'],
+            user_agent=transaccion['user_agent'],
+            billing_postal=transaccion['billing_postal'],
+            phone_number=transaccion['phone_number'],
+            EVENT_TIMESTAMP=transaccion['EVENT_TIMESTAMP'],
+            billing_address=transaccion['billing_address'],
+            resultado=result,
+            empresa_id=request.data['empresa_id']
+        )
+        
+        verificacion.save()
+            
+        arreglo = {"transaccion": i, "resultado": result[0]}
+            
+        respuesta.append(arreglo)
+        i=i+1
+        
+    return Response(respuesta)

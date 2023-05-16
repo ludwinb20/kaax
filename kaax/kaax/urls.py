@@ -15,7 +15,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from kaax_app.views import entrenamiento_csv, entrenamiento_json, verificar_transaccion
+from kaax_app.views import entrenamiento_csv, entrenamiento_json, verificar_transaccion, verificar_multiple
 # from .controllers.transacciones import revisar
 
 urlpatterns = [
@@ -24,5 +24,7 @@ urlpatterns = [
     path('entrenamiento/csv/', entrenamiento_csv, name='entrenamiento_csv'),
     path('entrenamiento/json/', entrenamiento_json, name='entrenamiento_json'),
     path('verificar/individual/', verificar_transaccion, name='verificar_transaccion'),
+    path('verificar/multiple/', verificar_multiple, name='verificar_multiple'),
+    
     
 ]
