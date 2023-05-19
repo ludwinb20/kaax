@@ -19,6 +19,7 @@ from sklearn.metrics import accuracy_score
 import pandas as pd
 from joblib import dump, load
 import datetime
+from kaax_app.soporte import reporte
 
 
 @csrf_exempt
@@ -177,12 +178,12 @@ def verificar_multiple(request):
             return JsonResponse({'error': f'El campo {field} es obligatorio.'}, status=status.HTTP_400_BAD_REQUEST)
 
     # verificar token de la empresa
-    # empresa_id = request.data['empresa_id']
-    # token = request.data['token']
-    # try:
-    #     empresa = Empresa.objects.get(id=empresa_id, token=token)
-    # except Empresa.DoesNotExist:
-    #     return JsonResponse({'error': 'Token de empresa inválido.'}, status=status.HTTP_401_UNAUTHORIZED)
+    empresa_id = request.data['empresa_id']
+    token = request.data['token']
+    try:
+        empresa = Empresa.objects.get(id=empresa_id, token=token)
+    except Empresa.DoesNotExist:
+        return JsonResponse({'error': 'Token de empresa inválido.'}, status=status.HTTP_401_UNAUTHORIZED)
         
     transacciones = request.data['transacciones']
     print(transacciones)
@@ -219,3 +220,30 @@ def verificar_multiple(request):
         i=i+1
         
     return Response(respuesta)
+
+@csrf_exempt
+@api_view(['GET'])
+def reporte_excel(request):
+    required_fields = ['fechaInicial', 'fechaFinal', 'token', 'id']
+    
+    for field in required_fields:
+        if field not in request.data:
+            return JsonResponse({'error': f'El campo {field} es obligatorio.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+    
+    # empresa_id = request.data['empresa_id']
+    # token = request.data['token']
+    # try:
+    #     empresa = Empresa.objects.get(id='id', token=token)
+    # except Empresa.DoesNotExist:
+    #     return JsonResponse({'error': 'Token de empresa inválido.'}, status=status.HTTP_401_UNAUTHORIZED)
+    
+    formato_esperado = '%Y-%m-%d'
+    
+    try:
+        datetime.strptime(request.data['fechaInicio'], formato_esperado)
+        datetime.strptime(request.data['fechaFinal'], formato_esperado)
+    except ValueError:
+        return JsonResponse({'error': 'Formato de fecha no valido(El formato debe ser yyyy-mm-dd, ejemplo: 2023-05-11)'}, status=status.HTTP_401_UNAUTHORIZED)
+    
+    datos = reporte(request.data['fechaInicial', 'fechaFinal'])

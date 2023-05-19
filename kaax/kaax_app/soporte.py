@@ -12,6 +12,9 @@ from sklearn.metrics import accuracy_score
 import joblib
 from kaax_app.models import Transacciones_Prueba, Empresa, Entrenamientos
 from joblib import dump
+import datetime
+from .models import Verificaciones
+from django.db.models import Q
 
 def renovartoken():
     empresas = Empresa.objects.all()
@@ -64,4 +67,17 @@ def entrenar():
     
     with open('kaax/pesos/feature_names.txt', 'w') as f:
         f.write('\n'.join(feature_names))
+        
+        
+        
+def reporte(fechaInicial, fechaFinal):
+    
+    fechaI = datetime.strptime(fechaInicial, "%Y-%m-%d")
+    fechaF= datetime.strptime(fechaFinal, "%Y-%m-%d")
+    
+    verificaciones = Verificaciones.objects.filter(Q(created_at__gte=fechaI) & Q(created_at__lte=fechaF))
+    
+    cantidad_registros = verificaciones.count()
+
+    print("Cantidad de registros:", cantidad_registros)
 
