@@ -15,6 +15,8 @@ from joblib import dump
 import datetime
 from .models import Verificaciones
 from django.db.models import Q
+from django.db.models.functions import ExtractWeek
+
 
 def renovartoken():
     empresas = Empresa.objects.all()
@@ -70,14 +72,64 @@ def entrenar():
         
         
         
-def reporte(fechaInicial, fechaFinal):
-    
-    fechaI = datetime.strptime(fechaInicial, "%Y-%m-%d")
-    fechaF= datetime.strptime(fechaFinal, "%Y-%m-%d")
-    
-    verificaciones = Verificaciones.objects.filter(Q(created_at__gte=fechaI) & Q(created_at__lte=fechaF))
-    
-    cantidad_registros = verificaciones.count()
+from django.db.models import Count
+from django.db.models.functions import ExtractHour, ExtractWeekDay, ExtractMonth
 
-    print("Cantidad de registros:", cantidad_registros)
+def reporte(empresa_id, fecha_inicio, fecha_fin):
+    # Obtener todos los registros de la empresa en el rango de fechas
+    registros = Verificaciones.objects.filter(empresa_id=empresa_id, created_at__range=[fecha_inicio, fecha_fin])
+    
+    # 1. Conteo total de registros
+    total_registros = registros.count()
+    
+    # 2. Total de registros "fraud" y "legit" (cantidad y porcentaje del total)
+    total_fraud = registros.filter(resultado='fraud').count()
+    porcentaje_fraud = (total_fraud / total_registros) * 100
+    total_legit = registros.filter(resultado='legit').count()
+    porcentaje_legit = (total_legit / total_registros) * 100
+    
+    # 3. Total "fraud" por hora del día
+    fraud_por_hora = registros.filter(resultado='fraud').annotate(hora=ExtractHour('created_at')).values('hora').annotate(count=Count('id')).order_by('hora')
+    
+    # 4. Total "legit" por hora del día
+    legit_por_hora = registros.filter(resultado='legit').annotate(hora=ExtractHour('created_at')).values('hora').annotate(count=Count('id')).order_by('hora')
+    
+    # 5. Total "fraud" por día de la semana
+    fraud_por_dia_semana = registros.filter(resultado='fraud').annotate(dia_semana=ExtractWeekDay('created_at')).values('dia_semana').annotate(count=Count('id')).order_by('dia_semana')
+    
+    # 6. Total "legit" por día de la semana
+    legit_por_dia_semana = registros.filter(resultado='legit').annotate(dia_semana=ExtractWeekDay('created_at')).values('dia_semana').annotate(count=Count('id')).order_by('dia_semana')
+    
+    # 7. Total "fraud" por semana
+    fraud_por_semana = registros.filter(resultado='fraud').annotate(semana=ExtractWeek('created_at')).values('semana').annotate(count=Count('id')).order_by('semana')
+    
+    # 8. Total "legit" por semana
+    legit_por_semana = registros.filter(resultado='legit').annotate(semana=ExtractWeek('created_at')).values('semana').annotate(count=Count('id')).order_by('semana')
+    
+    # 9. Total "fraud" por mes
+    fraud_por_mes = registros.filter(resultado='fraud').annotate(mes=ExtractMonth('created_at')).values('mes').annotate(count=Count('id')).order_by('mes')
+    
+    # 10. Total "legit" por mes
+    legit_por_mes = registros.filter(resultado='legit').annotate(mes=ExtractMonth('created_at')).values('mes').annotate(count=Count('id')).order_by('mes')
+    
+    # Devolver los resultados en un diccionario
+    resultados = {
+        'total_registros': total_registros,
+        'total_fraud': total_fraud,
+        'porcentaje_fraud': porcentaje_fraud,
+        'total_legit': total_legit,
+        'porcentaje_legit': porcentaje_legit,
+        'fraud_por_hora': fraud_por_hora,
+        'legit_por_hora': legit_por_hora,
+        'fraud_por_dia_semana': fraud_por_dia_semana,
+        'legit_por_dia_semana': legit_por_dia_semana,
+        'fraud_por_semana': fraud_por_semana,
+        'legit_por_semana': legit_por_semana,
+        'fraud_por_mes': fraud_por_mes,
+        'legit_por_mes': legit_por_mes,
+    }
+    
+    print(resultados)
+    return resultados
+
 

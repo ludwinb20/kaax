@@ -246,4 +246,5 @@ def reporte_excel(request):
     except ValueError:
         return JsonResponse({'error': 'Formato de fecha no valido(El formato debe ser yyyy-mm-dd, ejemplo: 2023-05-11)'}, status=status.HTTP_401_UNAUTHORIZED)
     
-    datos = reporte(request.data['fechaInicial', 'fechaFinal'])
+    datos = reporte(request.data[1, 'fechaInicial', 'fechaFinal'])
+    # datos = reporte(request.data[empresa.id, 'fechaInicial', 'fechaFinal'])
