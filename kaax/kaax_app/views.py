@@ -1,6 +1,6 @@
 from django.shortcuts import render
 import csv
-from django.http import JsonResponse, HttpResponse
+from django.http import JsonResponse, HttpResponse,FileResponse
 from django.views.decorators.csrf import csrf_exempt
 import uuid
 import os
@@ -18,9 +18,12 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 import pandas as pd
 from joblib import dump, load
-import datetime
+from datetime import datetime
 from kaax_app.soporte import reporte
-
+from openpyxl import Workbook
+from openpyxl.styles import PatternFill, Font, Border, Side
+import matplotlib.pyplot as plt
+import pdfkit
 
 @csrf_exempt
 def entrenamiento_csv(request):
@@ -241,10 +244,197 @@ def reporte_excel(request):
     formato_esperado = '%Y-%m-%d'
     
     try:
-        datetime.strptime(request.data['fechaInicio'], formato_esperado)
+        datetime.strptime(request.data['fechaInicial'], formato_esperado)
         datetime.strptime(request.data['fechaFinal'], formato_esperado)
     except ValueError:
         return JsonResponse({'error': 'Formato de fecha no valido(El formato debe ser yyyy-mm-dd, ejemplo: 2023-05-11)'}, status=status.HTTP_401_UNAUTHORIZED)
     
-    datos = reporte(request.data[1, 'fechaInicial', 'fechaFinal'])
-    # datos = reporte(request.data[empresa.id, 'fechaInicial', 'fechaFinal'])
+    datos = reporte(1, request.data[ 'fechaInicial'], request.data['fechaFinal'])
+    
+        # Extraer los datos relevantes
+    total_registros = datos["total_registros"]
+    total_fraud = datos["total_fraud"]
+    porcentaje_fraud = datos["porcentaje_fraud"]
+    total_legit = datos["total_legit"]
+    porcentaje_legit = datos["porcentaje_legit"]
+    fraud_por_hora = datos["fraud_por_hora"]
+    legit_por_hora = datos["legit_por_hora"]
+    fraud_por_dia_semana = datos["fraud_por_dia_semana"]
+    legit_por_dia_semana = datos["legit_por_dia_semana"]
+    fraud_por_semana = datos["fraud_por_semana"]
+    legit_por_semana = datos["legit_por_semana"]
+    fraud_por_mes = datos["fraud_por_mes"]
+    legit_por_mes = datos["legit_por_mes"]
+
+    # Crear un DataFrame de pandas con los datos
+    
+    categorias = ["Total Registros", "Total Fraudulentas", "Porcentaje Fraudulentas", "Total Legitimas", "Porcentaje Legitimas", " "]
+    valores = [total_registros, total_fraud, porcentaje_fraud, total_legit, porcentaje_legit, ' ']
+
+    # Agregar los datos por hora del día
+    for item in fraud_por_hora:
+        categorias.append(f"Fraudes por Hora {item['hora']}")
+        valores.append(item['count'])
+            
+    for item in legit_por_hora:
+        categorias.append(f"Legitimas por Hora {item['hora']}")
+        valores.append(item['count'])
+    
+    categorias.append(' ')
+    valores.append(' ')
+
+    # Agregar los datos por día de la semana
+    for item in fraud_por_dia_semana:
+        categorias.append(f"Fraudes por Día {item['dia_semana']}")
+        valores.append(item['count'])
+    for item in legit_por_dia_semana:
+        categorias.append(f"Legitimas por Día {item['dia_semana']}")
+        valores.append(item['count'])
+
+    categorias.append(' ')
+    valores.append(' ')
+    # Agregar los datos por semana
+
+    for item in fraud_por_semana:
+        categorias.append(f"Fraudes por Semana {item['semana']}")
+        valores.append(item['count'])
+    for item in legit_por_semana:
+        categorias.append(f"Legitimas por Semana {item['semana']}")
+        valores.append(item['count'])
+
+    categorias.append(' ')
+    valores.append(' ')
+    # Agregar los datos por mes
+ 
+    for item in fraud_por_mes:
+        categorias.append(f"Fraudes por Mes {item['mes']}")
+        valores.append(item['count'])
+    for item in legit_por_mes:
+        categorias.append(f"Legitimas por Mes {item['mes']}")
+        valores.append(item['count'])
+
+    
+    df = pd.DataFrame({ "Categoría": categorias, "Valores":  valores})
+    
+    # Crear un libro de trabajo de Excel
+    wb = Workbook()
+    # Seleccionar la hoja de cálculo activa (por defecto es la primera hoja)
+    ws = wb.active
+
+    # Definir los estilos de celda
+    header_fill = PatternFill(start_color="1e4d70", end_color="1e4d70", fill_type="solid")
+    header_font = Font(bold=True, color="FFFFFF")
+    value_fill = PatternFill(start_color="72e082", end_color="72e082", fill_type="solid")
+    value_font = Font(color="FFFFFF")
+    border = Border(left=Side(border_style="thin", color="000000"),
+                right=Side(border_style="thin", color="000000"),
+                top=Side(border_style="thin", color="000000"),
+                bottom=Side(border_style="thin", color="000000"))
+
+    # Aplicar formato a la primera fila (encabezados)
+    for col_num, value in enumerate(df.columns, 1):
+        cell = ws.cell(row=1, column=col_num, value=value)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.border = border
+
+    # Aplicar formato a las celdas de valores
+    for row_num, row_data in enumerate(df.values, 2):
+        for col_num, value in enumerate(row_data, 1):
+            cell = ws.cell(row=row_num, column=col_num, value=value)
+            cell.fill = value_fill
+            # cell.font = value_font
+            cell.border = border
+
+    # Ajustar el ancho de las columnas automáticamente
+    for column in ws.columns:
+        max_length = 0
+        column = [cell for cell in column]
+        for cell in column:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(cell.value)
+            except:
+                pass
+        adjusted_width = (max_length + 2)
+        ws.column_dimensions[column[0].column_letter].width = adjusted_width
+
+    # Guardar el libro de trabajo
+    archivo_excel = os.path.join('reporteria', 'reporte.xlsx')
+    df.to_excel(archivo_excel, index=False)
+
+    # Leer el archivo Excel generado
+    with open(archivo_excel, 'rb') as file:
+        excel_content = file.read()
+
+    # Configurar la respuesta HTTP con el archivo Excel adjunto
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename="reporte.xlsx"'
+    response.write(excel_content)
+
+    return response
+
+
+@csrf_exempt
+@api_view(['GET'])
+def reporte_graficas(request):
+    required_fields = ['fechaInicial', 'fechaFinal', 'token', 'id']
+    
+    for field in required_fields:
+        if field not in request.data:
+            return JsonResponse({'error': f'El campo {field} es obligatorio.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+    
+    # empresa_id = request.data['empresa_id']
+    # token = request.data['token']
+    # try:
+    #     empresa = Empresa.objects.get(id='id', token=token)
+    # except Empresa.DoesNotExist:
+    #     return JsonResponse({'error': 'Token de empresa inválido.'}, status=status.HTTP_401_UNAUTHORIZED)
+    
+    formato_esperado = '%Y-%m-%d'
+    
+    try:
+        datetime.strptime(request.data['fechaInicial'], formato_esperado)
+        datetime.strptime(request.data['fechaFinal'], formato_esperado)
+    except ValueError:
+        return JsonResponse({'error': 'Formato de fecha no valido(El formato debe ser yyyy-mm-dd, ejemplo: 2023-05-11)'}, status=status.HTTP_401_UNAUTHORIZED)
+    
+    datos = reporte(1, request.data[ 'fechaInicial'], request.data['fechaFinal'])
+
+    
+    # Obtener los datos de "fraud" y "legit" por hora del día del diccionario de resultados
+    fraud_por_hora = datos['fraud_por_hora']
+    legit_por_hora = datos['legit_por_hora']
+
+    # Obtener las horas y los recuentos de "fraud" y "legit" por hora del día
+    horas = [item['hora'] for item in fraud_por_hora]
+    fraud_counts = [item['count'] for item in fraud_por_hora]
+    legit_counts = [item['count'] for item in legit_por_hora]
+
+    # Crear el gráfico de barras
+    plt.figure(figsize=(10, 6))
+    plt.bar(horas, fraud_counts, label='Fraud')
+    plt.bar(horas, legit_counts, label='Legit')
+    plt.xlabel('Hora del día')
+    plt.ylabel('Recuento')
+    plt.title('Recuento de fraud y legit por hora del día')
+    plt.legend()
+
+    ruta_png = os.path.join('reporteria', 'grafico.png')
+    plt.savefig(ruta_png)
+
+    # Convertir el archivo PNG a PDF en la carpeta "reporteria"
+    ruta_pdf = os.path.join('reporteria', 'grafico.pdf')
+    pdfkit.from_file(ruta_png, ruta_pdf)
+
+    # Leer el archivo PDF generado
+    with open(ruta_pdf, 'rb') as file:
+        pdf_content = file.read()
+
+    # Configurar la respuesta HTTP con el archivo PDF adjunto
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="grafico.pdf"'
+    response.write(pdf_content)
+
+    return response
