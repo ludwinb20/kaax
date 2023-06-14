@@ -10,12 +10,14 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import accuracy_score
 import joblib
-from kaax_app.models import Transacciones_Prueba, Empresa, Entrenamientos
+from kaax_app.models import Transacciones_Prueba, Empresa, Entrenamientos, Plan
 from joblib import dump
 import datetime
 from .models import Verificaciones
 from django.db.models import Q
 from django.db.models.functions import ExtractWeek
+from datetime import datetime, timedelta
+from dateutil.relativedelta import relativedelta
 
 
 def renovartoken():
@@ -33,6 +35,7 @@ def renovartoken():
             print('Token Enviado')
         else:
             print('Fallo en envio de token')
+            
 
 def entrenar():
     transacciones = Transacciones_Prueba.objects.exclude(empresa__isnull=True).values('ip_address', 'email_address', 'billing_state', 'user_agent', 'billing_postal', 'phone_number', 'EVENT_TIMESTAMP', 'billing_address', 'EVENT_LABEL')
@@ -150,3 +153,15 @@ def reporte(empresa_id, fecha_inicio, fecha_fin):
     return resultados
 
 
+
+def revisarplan(id):
+    empresa = Empresa.objects.get(id=id)
+    plan = Plan.objects.get(id=empresa.plan)
+    fecha_actual = datetime.now()
+    
+    if plan.id == 1:
+        final = empresa.inicio_plan + relativedelta(months=1)
+        if final < fecha_actual:
+            return False
+        else:
+            return True

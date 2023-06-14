@@ -2,16 +2,11 @@
 """Django's command-line utility for administrative tasks."""
 import os
 import sys
-import threading
 from django.core.wsgi import get_wsgi_application
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'kaax.settings')
 application = get_wsgi_application()
-from kaax_app.scheduler import scheduler
 
-
-def run_scheduler():
-    scheduler.start()
 
 def main():
     """Run administrative tasks."""
@@ -28,7 +23,6 @@ def main():
 
 
 if __name__ == "__main__":
-    scheduler_thread = threading.Thread(target=run_scheduler)
-    # scheduler_thread.start()
     main()
+
 

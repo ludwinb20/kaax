@@ -40,6 +40,8 @@ INSTALLED_APPS = [
     "kaax_app",
     "django_apscheduler",
     "rest_framework",
+    "django_crontab",
+
 ]
 
 MIDDLEWARE = [
@@ -134,3 +136,8 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 SCHEDULER_AUTOSTART = True
 SCHEDULER_RUN_NOW = False
 SCHEDULER_TIMEZONE = 'America/Tegucigalpa'
+
+CRONJOBS = [
+    ('0 */4 * * *', 'kaax_app.soporte.renovartoken'),  # Ejecutar renovartoken cada 4 horas
+    ('0 1 * * *', 'kaax_app.soporte.entrenar'),        # Ejecutar entrenar todos los días a la 1:00 am
+]

@@ -387,7 +387,7 @@ def reporte_excel(request):
 
 @csrf_exempt
 @api_view(['GET'])
-def reporte_graficas(request):
+def reporte_datos(request):
     required_fields = ['fechaInicial', 'fechaFinal', 'token', 'id']
     
     for field in required_fields:
@@ -411,7 +411,7 @@ def reporte_graficas(request):
         return JsonResponse({'error': 'Formato de fecha no valido(El formato debe ser yyyy-mm-dd, ejemplo: 2023-05-11)'}, status=status.HTTP_401_UNAUTHORIZED)
     
     datos = reporte(1, request.data[ 'fechaInicial'], request.data['fechaFinal'])
-
+    
     total_registros = datos["total_registros"]
     total_fraud = datos["total_fraud"]
     porcentaje_fraud = datos["porcentaje_fraud"]
@@ -425,261 +425,87 @@ def reporte_graficas(request):
     legit_por_semana = datos["legit_por_semana"]
     fraud_por_mes = datos["fraud_por_mes"]
     legit_por_mes = datos["legit_por_mes"]
-
-    ancho_pagina = 600
-    alto_pagina = 800
-    ancho_grafico = ancho_pagina / 3
-    alto_grafico = alto_pagina / 3
-
-    c = canvas.Canvas('reporteria/graficos.pdf', pagesize=letter)
-
-    # Inicializar el índice
-    index = 0
-
-    x = 0
-    y = 0
-
-    # Agregar el objeto Rect al Drawing
-    drawing = Drawing(ancho_grafico, alto_grafico)
-    borde = Rect(0, 0, ancho_grafico, alto_grafico)
-    borde.strokeColor = colors.black
-    borde.strokeWidth = 1
-    drawing.add(borde)
-
-    pie = Pie()
-    pie.x = ancho_grafico / 2
-    pie.y = alto_grafico / 2
-    pie.width = ancho_grafico
-    pie.height = alto_grafico
-    pie.data = [total_fraud, total_legit]
-    pie.labels = ['Total fraudes', 'Total Legitimas']
-    pie.slices.strokeWidth = 0.5
-    pie.slices.fontName = 'Helvetica-Bold'
-    pie.slices.fontSize = 8
-    pie.slices.labelRadius = 0.7
-    pie.slices.strokeColor = colors.white
-
-    drawing.add(pie)
-    drawing.drawOn(c, x, y)
-
-    x += ancho_grafico
-
-    drawing2 = Drawing(ancho_grafico, alto_grafico)
-
-    pie2 = Pie()
-    pie2.x = ancho_grafico / 2
-    pie2.y = alto_grafico / 2
-    pie2.width = ancho_grafico
-    pie2.height = alto_grafico
-    pie2.data = [porcentaje_fraud, porcentaje_legit]
-    pie2.labels = ['Porcentaje fraudes', 'Porcentaje Legitimas']
-    pie2.slices.strokeWidth = 0.5
-    pie2.slices.fontName = 'Helvetica-Bold'
-    pie2.slices.fontSize = 8
-    pie2.slices.labelRadius = 0.7
-    pie2.slices.strokeColor = colors.white
-
-    drawing2.add(pie2)
-    drawing2.drawOn(c, x, y)
-
-    x += ancho_grafico
-
-    categorias = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24]
-    valoresf = []
-    valoresl = []
-
-    for hora in categorias:
-        contador = 0
-        for item in fraud_por_hora:
-            if item['hora'] == hora:
-                valoresf.append(item['count'])
-                contador = 1
-        if contador == 0:
-            valoresf.append(0)
-
-    for hora in categorias:
-        contador = 0
-        for item in legit_por_hora:
-            if item['hora'] == hora:
-                valoresl.append(item['count'])
-                contador = 1
-        if contador == 0:
-            valoresl.append(0)
-
-    drawing3 = Drawing(ancho_grafico, alto_grafico)
-    data = [valoresl, valoresf]
-    chart = VerticalBarChart()
-    chart.x = ancho_grafico / 4
-    chart.y = alto_grafico / 4
-    chart.width = ancho_grafico / 2
-    chart.height = alto_grafico / 2
-    chart.data = data
-    chart.categoryAxis.categoryNames = [str(h) for h in categorias]
-    chart.bars[0].fillColor = colors.red
-    chart.bars[1].fillColor = colors.green
-
-    drawing3.add(chart)
-    drawing3.drawOn(c, x, y)
-
-    c.showPage()
-    # c.save()
-
     
-    categorias = [1, 2, 3, 4, 5, 6, 7]
-    categoriasN = ['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado']
-    valoresf = []
-    valoresl = []
+    fraudesHora = []
+    for item in fraud_por_hora:
+        fraudesHora.append({f"Hora {item['hora']}": {item['count']}})
 
-    for dia in categorias:
-        contador = 0
-        for item in fraud_por_dia_semana:
-            if item['dia_semana'] == dia:
-                valoresf.append(item['count'])
-                contador = 1
-        if contador == 0:
-            valoresf.append(0)
-
-    for dia in categorias:
-        contador = 0
-        for item in legit_por_dia_semana:
-            if item['dia_semana'] == dia:
-                valoresl.append(item['count'])
-                contador = 1
-        if contador == 0:
-            valoresl.append(0)
-
-    drawing6 = Drawing(ancho_grafico, alto_grafico)
-    data = [valoresl, valoresf]
-    chart = VerticalBarChart()
-    chart.x = 50
-    chart.y = 50
-    chart.width = 300
-    chart.height = 100
-    chart.data = data
-    chart.categoryAxis.categoryNames = [str(h) for h in categoriasN]
-    chart.bars[0].fillColor = HexColor("#FF0000")  # Color para la categoría "Legit"
-    chart.bars[1].fillColor = HexColor("#00FF00")  # Color para la categoría "Fraud"
-
-    x = 0
-    drawing6.add(chart)
-    drawing6.drawOn(c, x ,y)
+    legitimasHora = []
+    for item in legit_por_hora:
+        legitimasHora.append({f"Hora {item['hora']}": {item['count']}})
+        
+    fraudedia = []
+    for item in fraud_por_dia_semana:
+        fraudedia.append({f"Dia {item['dia_semana']}": {item['count']}})
+        
+    legitimasdia = []
+    for item in legit_por_dia_semana:
+        legitimasdia.append({f"Dia {item['dia_semana']}": {item['count']}})
     
-    numeros_semana = []
-    nombres_semana = []
-    valoresf = []
-    valoresl = []
+    legitimassemana = []
+    for item in legit_por_semana:
+        legitimassemana.append({f"Semana {item['semana']}": {item['count']}})
+    
+    fraudesemana = []
+    for item in fraud_por_semana:
+        fraudesemana.append({f"Semana {item['semana']}": {item['count']}})
+        
+    legitimasmes = []
+    for item in fraud_por_mes:
+        legitimasmes.append({f"Mes {item['mes']}": {item['count']}})
+        
+    fraudesmes = []
+    for item in legit_por_mes:
+        fraudesmes.append({f"Mes {item['mes']}": {item['count']}})
+        
+        
+    respuesta = {
+        "Total Transacciones verificadas": total_registros,
+        "Total transacciones fraudulentas":  total_fraud,
+        "Porcentaje de transacciones fraudulentas":  porcentaje_fraud,
+        "Total transacciones legitimas":  total_legit,
+        "Porcentaje de transacciones legitimas":  porcentaje_legit,
+        "Transacciones fraudulentas por hora": fraudesHora,
+        "Transacciones legitimas por hora": legitimasHora,
+        "Transacciones fraudulentas por dia de la semana": fraudedia,
+        "Transacciones legitimas por dia de la semana": legitimasdia,
+        "Transacciones fraudulentas por semana": fraudesemana,
+        "Transacciones legitimas por semana": legitimassemana,
+        "Transacciones fraudulentas por mes": legitimasmes,
+        "Transacciones legitimas por mes": fraudesmes,
+    }
 
-    # Agregar un día extra a la fecha de fin para asegurarse de incluir la última semana completa
-    
-    final = datetime.strptime(request.data['fechaFinal'], "%Y-%m-%d") + timedelta(days=1)
-
-    # Iterar por cada día entre las fechas de inicio y fin
-    fecha_actual = datetime.strptime(request.data['fechaInicial'], "%Y-%m-%d")
-    while fecha_actual < final:
-        numero_semana = fecha_actual.isocalendar()[1]  # Obtener el número de semana
-        numeros_semana.append(numero_semana)
-        fecha_actual += timedelta(days=1)  # Avanzar al siguiente día
-
-    for semana in numeros_semana:
-        contador = 0
-        nombres_semana.append(f"Semana {semana}")
-        for item in fraud_por_semana:
-            if item['semana'] == semana:
-                valoresf.append(item['count'])
-                contador = 1
-        if contador == 0:
-            valoresf.append(0)
-    
-    for semana in numeros_semana:
-        contador = 0
-        for item in legit_por_semana:
-            if item['semana'] == semana:
-                valoresl.append(item['count'])
-                contador = 1
-        if contador == 0:
-            valoresl.append(0)
-    
-    drawing4 = Drawing(ancho_grafico, alto_grafico)
-    data = [valoresl, valoresf]
-    chart = VerticalBarChart()
-    chart.x = 50
-    chart.y = 50
-    chart.width = 300
-    chart.height = 100
-    chart.data = data
-    chart.categoryAxis.categoryNames = [str(h) for h in nombres_semana]
-    chart.bars[0].fillColor = HexColor("#FF0000")  # Color para la categoría "Legit"
-    chart.bars[1].fillColor = HexColor("#00FF00")  # Color para la categoría "Fraud"
-    
-    x = ancho_grafico
-    
-    drawing4.add(chart)
-    drawing4.drawOn(c, x, y)
-    
-    numeros_mes = []
-    valoresf = []
-    valoresl = []
+    return Response(respuesta)
 
 
-    # Agregar un día extra a la fecha de fin para asegurarse de incluir la última semana completa
-    final = datetime.strptime(request.data['fechaFinal'], "%Y-%m-%d") + timedelta(days=1)
-
-
-    # Iterar por cada día entre las fechas de inicio y fin
-    fecha_actual = datetime.strptime(request.data['fechaInicial'], "%Y-%m-%d").replace(day=1)
-
-    while fecha_actual < final:
-        numero_mes = fecha_actual.month  # Obtener el número de mes
-        numeros_mes.append(numero_mes)
-        fecha_actual = fecha_actual.replace(day=1)  # Avanzar al primer día del siguiente mes
-
-        # Calcular el siguiente mes
-        if fecha_actual.month == 12:
-            fecha_actual = fecha_actual.replace(year=fecha_actual.year + 1, month=1)
-        else:
-            fecha_actual = fecha_actual.replace(month=fecha_actual.month + 1)
-
+@csrf_exempt
+@api_view(['GET'])
+def reporte_unico(request, token, id):
     
-    for mes in numeros_mes:
-        contador = 0
-        for item in fraud_por_mes:
-            if item['mes'] == mes:
-                valoresf.append(item['count'])
-                contador = 1
-        if contador == 0:
-            valoresf.append(0)
+    # try:
+    #     empresa = Empresa.objects.get(id='id', token=token)
+    # except Empresa.DoesNotExist:
+    #     return JsonResponse({'error': 'Token de empresa inválido.'}, status=status.HTTP_401_UNAUTHORIZED)
     
-    for mes in numeros_mes:
-        contador = 0
-        for item in legit_por_mes:
-            if item['mes'] == mes:
-                valoresl.append(item['count'])
-                contador = 1
-        if contador == 0:
-            valoresf.append(0)
+    transaccion = Verificaciones.objects.get(id=id)
     
-    drawing5 = Drawing(ancho_grafico, alto_grafico)
-    data = [valoresl, valoresf]
-    chart = VerticalBarChart()
-    chart.x = 50
-    chart.y = 50
-    chart.width = 300
-    chart.height = 100
-    chart.data = data
-    chart.categoryAxis.categoryNames = [str(h) for h in numeros_mes]
-    chart.bars[0].fillColor = HexColor("#FF0000")  # Color para la categoría "Legit"
-    chart.bars[1].fillColor = HexColor("#00FF00")  # Color para la categoría "Fraud"
+    respuesta = {"Transaccion": transaccion.id, "Resultado": transaccion.resultado}
+    
+    return Response(respuesta)
 
-    x = ancho_grafico * 2
-    
-    drawing5.add(chart)
-    drawing5.drawOn(c, x, y)
-    
-    c.showPage()
-    c.save()
-    
-    with open('reporteria/graficos.pdf', 'rb') as file:
-        response = HttpResponse(file.read(), content_type='application/pdf')
-        response['Content-Disposition'] = 'attachment; filename="graficos.pdf"'
 
-    return response
+@csrf_exempt
+@api_view(['GET'])
+def reporte_rango(request, token, inicio_id, fin_id):
+    # try:
+    #     empresa = Empresa.objects.get(id='id', token=token)
+    # except Empresa.DoesNotExist:
+    #     return JsonResponse({'error': 'Token de empresa inválido.'}, status=status.HTTP_401_UNAUTHORIZED)
+    
+    transacciones = Verificaciones.objects.filter(id__gt=inicio_id, id__lt=fin_id)
+    
+    respuesta = []
+    for transaccion in transacciones:
+        respuesta.append({"Transaccion": transaccion.id, "Resultado": transaccion.resultado})
+        
+    return Response(respuesta)

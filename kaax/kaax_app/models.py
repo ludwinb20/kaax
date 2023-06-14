@@ -16,6 +16,8 @@ class Empresa(models.Model):
     endpoint_token = models.CharField(max_length=255)
     contador = models.IntegerField(default=0)
     plan = models.ForeignKey(Plan, on_delete=models.CASCADE)
+    inicio_plan = models.DateTimeField()
+    key =  models.CharField(max_length=225)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 
