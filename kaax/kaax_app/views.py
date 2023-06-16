@@ -19,26 +19,28 @@ from sklearn.metrics import accuracy_score
 import pandas as pd
 from joblib import dump, load
 from datetime import datetime,timedelta
-from kaax_app.soporte import reporte
+from kaax_app.soporte import reporte, revisarplan
 from openpyxl import Workbook
 from openpyxl.styles import PatternFill, Font, Border, Side
-import matplotlib.pyplot as plt
-import pdfkit
-from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen import canvas
-from reportlab.lib.colors import HexColor
-from reportlab.graphics.shapes import Drawing
-from reportlab.graphics.charts.piecharts import Pie
-from reportlab.graphics.shapes import Drawing
-from reportlab.graphics.charts.barcharts import VerticalBarChart
-from reportlab.lib.colors import HexColor
-from reportlab.lib import colors
-from reportlab.graphics.shapes import Rect
 
 @csrf_exempt
 def entrenamiento_csv(request):
     filepath = ''
     if request.method == 'POST':
+        # verificar token de la empresa
+        # # empresa_id = request.data['empresa_id']
+        # # token = request.data['token']
+        # # try:
+        # #     empresa = Empresa.objects.get(id=empresa_id, token=token)
+        # # except Empresa.DoesNotExist:
+        # #     return JsonResponse({'error': 'Token de empresa inválido.'}, status=status.HTTP_401_UNAUTHORIZED)
+        
+        # plan_activo = revisarplan(empresa_id)
+
+        # # Comprobar si el plan ha expirado
+        # if not plan_activo:
+        #     # Plan expirado, devolver una respuesta indicando que el plan ha expirado
+        #         return JsonResponse({'error': f'El plan ha expirado. Por favor actualice su plan'}, status=status.HTTP_400_BAD_REQUEST)
         archivo = request.FILES.get('archivo')
         if archivo:
             # Procesar el archivo CSV
@@ -94,6 +96,21 @@ def entrenamiento_csv(request):
 @csrf_exempt
 def entrenamiento_json(request):
     if request.method == 'POST':
+        # verificar token de la empresa
+        # # empresa_id = request.data['empresa_id']
+        # # token = request.data['token']
+        # # try:
+        # #     empresa = Empresa.objects.get(id=empresa_id, token=token)
+        # # except Empresa.DoesNotExist:
+        # #     return JsonResponse({'error': 'Token de empresa inválido.'}, status=status.HTTP_401_UNAUTHORIZED)
+        
+        # plan_activo = revisarplan(empresa_id)
+
+        # # Comprobar si el plan ha expirado
+        # if not plan_activo:
+        #     # Plan expirado, devolver una respuesta indicando que el plan ha expirado
+        #         return JsonResponse({'error': f'El plan ha expirado. Por favor actualice su plan'}, status=status.HTTP_400_BAD_REQUEST)
+    
         data = json.loads(request.body.decode('utf-8'))
         if data:
             if not all(key in data[0] for key in ('ip_address', 'email_address', 'billing_state', 'user_agent', 'billing_postal', 'phone_number', 'EVENT_TIMESTAMP', 'billing_address', 'EVENT_LABEL')):
@@ -151,6 +168,15 @@ def verificar_transaccion(request):
     # #     empresa = Empresa.objects.get(id=empresa_id, token=token)
     # # except Empresa.DoesNotExist:
     # #     return JsonResponse({'error': 'Token de empresa inválido.'}, status=status.HTTP_401_UNAUTHORIZED)
+    
+    # plan_activo = revisarplan(empresa_id)
+
+    # # Comprobar si el plan ha expirado
+    # if not plan_activo:
+    #     # Plan expirado, devolver una respuesta indicando que el plan ha expirado
+    #         return JsonResponse({'error': f'El plan ha expirado. Por favor actualice su plan'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    
     transaccion = request.data['transaccion']
     # cargar modelo y preprocesador
     pipe = load('kaax/pesos/decision_tree.joblib')
@@ -244,12 +270,20 @@ def reporte_excel(request):
             return JsonResponse({'error': f'El campo {field} es obligatorio.'}, status=status.HTTP_400_BAD_REQUEST)
         
     
-    # empresa_id = request.data['empresa_id']
-    # token = request.data['token']
-    # try:
-    #     empresa = Empresa.objects.get(id='id', token=token)
-    # except Empresa.DoesNotExist:
-    #     return JsonResponse({'error': 'Token de empresa inválido.'}, status=status.HTTP_401_UNAUTHORIZED)
+        # verificar token de la empresa
+        # # empresa_id = request.data['empresa_id']
+        # # token = request.data['token']
+        # # try:
+        # #     empresa = Empresa.objects.get(id=empresa_id, token=token)
+        # # except Empresa.DoesNotExist:
+        # #     return JsonResponse({'error': 'Token de empresa inválido.'}, status=status.HTTP_401_UNAUTHORIZED)
+        
+        # plan_activo = revisarplan(empresa_id)
+
+        # # Comprobar si el plan ha expirado
+        # if not plan_activo:
+        #     # Plan expirado, devolver una respuesta indicando que el plan ha expirado
+        #         return JsonResponse({'error': f'El plan ha expirado. Por favor actualice su plan'}, status=status.HTTP_400_BAD_REQUEST)
     
     formato_esperado = '%Y-%m-%d'
     
@@ -395,12 +429,20 @@ def reporte_datos(request):
             return JsonResponse({'error': f'El campo {field} es obligatorio.'}, status=status.HTTP_400_BAD_REQUEST)
         
     
-    # empresa_id = request.data['empresa_id']
     # token = request.data['token']
     # try:
-    #     empresa = Empresa.objects.get(id='id', token=token)
+    #     empresa = Empresa.objects.get( token=token)
     # except Empresa.DoesNotExist:
     #     return JsonResponse({'error': 'Token de empresa inválido.'}, status=status.HTTP_401_UNAUTHORIZED)
+    
+    # plan_activo = revisarplan(empresa.id)
+
+    # # Comprobar si el plan ha expirado
+    # if not plan_activo:
+    #     # Plan expirado, devolver una respuesta indicando que el plan ha expirado
+    #         return JsonResponse({'error': f'El plan ha expirado. Por favor actualice su plan'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    
     
     formato_esperado = '%Y-%m-%d'
     
@@ -479,13 +521,25 @@ def reporte_datos(request):
 
 
 @csrf_exempt
-@api_view(['GET'])
 def reporte_unico(request, token, id):
+    required_fields = ['token', 'id']
+
+    for field in required_fields:
+        if field not in request.GET:
+            return Response({'error': f'El campo {field} es obligatorio.'}, status=status.HTTP_400_BAD_REQUEST)
     
+    # token = request.data['token']
     # try:
-    #     empresa = Empresa.objects.get(id='id', token=token)
+    #     empresa = Empresa.objects.get( token=token)
     # except Empresa.DoesNotExist:
     #     return JsonResponse({'error': 'Token de empresa inválido.'}, status=status.HTTP_401_UNAUTHORIZED)
+    
+    # plan_activo = revisarplan(empresa.id)
+
+    # # Comprobar si el plan ha expirado
+    # if not plan_activo:
+    #     # Plan expirado, devolver una respuesta indicando que el plan ha expirado
+    #         return JsonResponse({'error': f'El plan ha expirado. Por favor actualice su plan'}, status=status.HTTP_400_BAD_REQUEST)
     
     transaccion = Verificaciones.objects.get(id=id)
     
@@ -497,10 +551,24 @@ def reporte_unico(request, token, id):
 @csrf_exempt
 @api_view(['GET'])
 def reporte_rango(request, token, inicio_id, fin_id):
+
+    required_fields = ['token', 'inicio_id', 'fin_id']
+
+    for field in required_fields:
+        if field not in request.GET:
+            return Response({'error': f'El campo {field} es obligatorio.'}, status=status.HTTP_400_BAD_REQUEST)
+
     # try:
-    #     empresa = Empresa.objects.get(id='id', token=token)
+    #     empresa = Empresa.objects.get( token=token)
     # except Empresa.DoesNotExist:
     #     return JsonResponse({'error': 'Token de empresa inválido.'}, status=status.HTTP_401_UNAUTHORIZED)
+    
+    # plan_activo = revisarplan(empresa.id)
+
+    # # Comprobar si el plan ha expirado
+    # if not plan_activo:
+    #     # Plan expirado, devolver una respuesta indicando que el plan ha expirado
+    #         return JsonResponse({'error': f'El plan ha expirado. Por favor actualice su plan'}, status=status.HTTP_400_BAD_REQUEST)
     
     transacciones = Verificaciones.objects.filter(id__gt=inicio_id, id__lt=fin_id)
     
