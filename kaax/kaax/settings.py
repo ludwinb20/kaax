@@ -38,7 +38,6 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "kaax_app",
-    "django_apscheduler",
     "rest_framework",
     "django_crontab",
 
