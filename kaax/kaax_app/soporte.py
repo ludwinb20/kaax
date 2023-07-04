@@ -7,6 +7,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import accuracy_score
 import joblib
@@ -18,6 +19,10 @@ from django.db.models import Q
 from django.db.models.functions import ExtractWeek
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
+
 
 
 def renovartoken():
@@ -53,25 +58,42 @@ def entrenar():
         transformers=[
             ('cat', OneHotEncoder(handle_unknown='ignore'), categorical_features)])
 
-    clf = DecisionTreeClassifier()
+    # clf = DecisionTreeClassifier()
 
-    pipe = Pipeline(steps=[('preprocessor', preprocessor),('classifier', clf)])
+    # pipe = Pipeline(steps=[('preprocessor', preprocessor),('classifier', clf)])
 
-    pipe.fit(X_train, y_train)
+    # pipe.fit(X_train, y_train)
 
-    y_pred = pipe.predict(X_test)
-    accuracy = accuracy_score(y_test, y_pred)
+    # y_pred = pipe.predict(X_test)
+    # accuracy = accuracy_score(y_test, y_pred)
 
-    print('Accuracy: %.2f' % accuracy)
-    entrenamiento = Entrenamientos(precision=accuracy)
-    entrenamiento.save()
+    # print('Accuracy: %.2f' % accuracy)
+    # entrenamiento = Entrenamientos(precision=accuracy)
+    # entrenamiento.save()
 
-    # guardar el modelo entrenado usando joblib
-    feature_names = list(X.columns)
-    dump(pipe, 'kaax/pesos/decision_tree.joblib')
+    # # guardar el modelo entrenado usando joblib
+    # feature_names = list(X.columns)
+    # dump(pipe, 'kaax/pesos/decision_tree.joblib')
     
-    with open('kaax/pesos/feature_names.txt', 'w') as f:
-        f.write('\n'.join(feature_names))
+    # with open('kaax/pesos/feature_names.txt', 'w') as f:
+    #     f.write('\n'.join(feature_names))
+    preprocessor = ColumnTransformer(transformers=[('cat', OneHotEncoder(handle_unknown='ignore'), categorical_features)])
+
+    logreg = LogisticRegression()
+
+    # Entrenar el modelo de regresión logística
+    logreg.fit(X_train, y_train)
+
+    # Realizar predicciones en el conjunto de prueba
+    y_pred = logreg.predict(X_test)
+
+    # Calcular la precisión del modelo
+    accuracy = accuracy_score(y_test, y_pred)
+    print('Accuracy: %.2f' % accuracy)
+
+    
+    
+
         
         
         

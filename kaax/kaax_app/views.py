@@ -29,7 +29,7 @@ def entrenamiento_csv(request):
     if request.method == 'POST':
         # verificar token de la empresa
         # # empresa_id = request.data['empresa_id']
-        # # token = request.data['token']
+        # # token = request.META.get('HTTP_TOKEN')
         # # try:
         # #     empresa = Empresa.objects.get(id=empresa_id, token=token)
         # # except Empresa.DoesNotExist:
@@ -98,7 +98,7 @@ def entrenamiento_json(request):
     if request.method == 'POST':
         # verificar token de la empresa
         # # empresa_id = request.data['empresa_id']
-        # # token = request.data['token']
+        # # token = request.META.get('HTTP_TOKEN')
         # # try:
         # #     empresa = Empresa.objects.get(id=empresa_id, token=token)
         # # except Empresa.DoesNotExist:
@@ -163,7 +163,7 @@ def verificar_transaccion(request):
         
     # verificar token de la empresa
     # # empresa_id = request.data['empresa_id']
-    # # token = request.data['token']
+    # # token = request.META.get('HTTP_TOKEN')
     # # try:
     # #     empresa = Empresa.objects.get(id=empresa_id, token=token)
     # # except Empresa.DoesNotExist:
@@ -217,12 +217,19 @@ def verificar_multiple(request):
             return JsonResponse({'error': f'El campo {field} es obligatorio.'}, status=status.HTTP_400_BAD_REQUEST)
 
     # verificar token de la empresa
-    empresa_id = request.data['empresa_id']
-    token = request.data['token']
-    try:
-        empresa = Empresa.objects.get(id=empresa_id, token=token)
-    except Empresa.DoesNotExist:
-        return JsonResponse({'error': 'Token de empresa inválido.'}, status=status.HTTP_401_UNAUTHORIZED)
+    # # empresa_id = request.data['empresa_id']
+    # # token = request.META.get('HTTP_TOKEN')
+    # # try:
+    # #     empresa = Empresa.objects.get(id=empresa_id, token=token)
+    # # except Empresa.DoesNotExist:
+    # #     return JsonResponse({'error': 'Token de empresa inválido.'}, status=status.HTTP_401_UNAUTHORIZED)
+    
+    # plan_activo = revisarplan(empresa_id)
+
+    # # Comprobar si el plan ha expirado
+    # if not plan_activo:
+    #     # Plan expirado, devolver una respuesta indicando que el plan ha expirado
+    #         return JsonResponse({'error': f'El plan ha expirado. Por favor actualice su plan'}, status=status.HTTP_400_BAD_REQUEST)
         
     transacciones = request.data['transacciones']
     print(transacciones)
@@ -272,7 +279,7 @@ def reporte_excel(request):
     
         # verificar token de la empresa
         # # empresa_id = request.data['empresa_id']
-        # # token = request.data['token']
+        # # token = request.META.get('HTTP_TOKEN')
         # # try:
         # #     empresa = Empresa.objects.get(id=empresa_id, token=token)
         # # except Empresa.DoesNotExist:
@@ -429,7 +436,7 @@ def reporte_datos(request):
             return JsonResponse({'error': f'El campo {field} es obligatorio.'}, status=status.HTTP_400_BAD_REQUEST)
         
     
-    # token = request.data['token']
+    # token = request.META.get('HTTP_TOKEN')
     # try:
     #     empresa = Empresa.objects.get( token=token)
     # except Empresa.DoesNotExist:
@@ -528,7 +535,7 @@ def reporte_unico(request, token, id):
         if field not in request.GET:
             return Response({'error': f'El campo {field} es obligatorio.'}, status=status.HTTP_400_BAD_REQUEST)
     
-    # token = request.data['token']
+    # token = request.META.get('HTTP_TOKEN')
     # try:
     #     empresa = Empresa.objects.get( token=token)
     # except Empresa.DoesNotExist:
@@ -557,7 +564,8 @@ def reporte_rango(request, token, inicio_id, fin_id):
     for field in required_fields:
         if field not in request.GET:
             return Response({'error': f'El campo {field} es obligatorio.'}, status=status.HTTP_400_BAD_REQUEST)
-
+ 
+    # token = request.META.get('HTTP_TOKEN')
     # try:
     #     empresa = Empresa.objects.get( token=token)
     # except Empresa.DoesNotExist:
